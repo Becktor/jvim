@@ -2,20 +2,27 @@
 
 Containerized Neovim development environment. Consistent config across any system with Docker.
 
-## Quick Start
+## Install
 
 ```bash
-# Check Docker is installed
-./scripts/setup.sh
+bash <(curl -s https://raw.githubusercontent.com/becktor/jobe-nvim/main/setup.sh)
+```
 
-# Install (builds image + adds jvim to PATH)
-./scripts/install.sh
+Then use:
 
-# Use it
+```bash
 jvim                      # Open nvim in current directory
 jvim file.py              # Open file
 jvim src/                 # Open directory
 jvim -O file1.py file2.py # Multiple files
+```
+
+## Manual Install
+
+```bash
+git clone https://github.com/becktor/jobe-nvim.git ~/.jobe-nvim
+~/.jobe-nvim/scripts/build.sh
+ln -s ~/.jobe-nvim/bin/jvim ~/.local/bin/jvim
 ```
 
 ## Structure

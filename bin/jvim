@@ -53,9 +53,13 @@ DOTFILES_PATH="${DOTFILES_PATH:-${HOME}/git/dotfiles}"
 MOUNTS=(
     -v "$MOUNT_DIR":/home/${USERNAME}/workspace
     -v jobe-nvim-data:/home/${USERNAME}/.local/share/nvim
-    -v "${DOTFILES_PATH}/nvim":/home/${USERNAME}/.config/nvim
-    -v "${DOTFILES_PATH}":/home/${USERNAME}/git/dotfiles
 )
+
+# Only mount dotfiles if they exist on host
+if [[ -d "${DOTFILES_PATH}/nvim" ]]; then
+    MOUNTS+=(-v "${DOTFILES_PATH}/nvim":/home/${USERNAME}/.config/nvim)
+    MOUNTS+=(-v "${DOTFILES_PATH}":/home/${USERNAME}/git/dotfiles)
+fi
 
 # Mount SSH if exists
 [[ -d "${HOME}/.ssh" ]] && MOUNTS+=(-v "${HOME}/.ssh":/home/${USERNAME}/.ssh:ro)
