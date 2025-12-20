@@ -3,7 +3,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 
 # Export host UID/GID and username for container user
 export USER_UID=$(id -u)
@@ -17,7 +17,7 @@ echo "  GID: ${USER_GID}"
 echo "  User: ${USERNAME}"
 echo ""
 
-docker compose build --build-arg CACHE_BUST="${CACHE_BUST}" "$@"
+docker compose -f "$REPO_ROOT/docker/compose.yml" build --build-arg CACHE_BUST="${CACHE_BUST}" "$@"
 
 echo ""
-echo "Done! Run with: ./run.sh"
+echo "Done! Run with: jvim"

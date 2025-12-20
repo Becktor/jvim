@@ -17,6 +17,7 @@ log_warn()    { echo -e "${YELLOW}[WARN]${NC} $1"; }
 log_error()   { echo -e "${RED}[ERROR]${NC} $1"; }
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
 
 # =============================================================================
@@ -26,7 +27,7 @@ INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
 check_docker() {
     if ! command -v docker &>/dev/null; then
         log_error "Docker is not installed"
-        log_info "Run ./setup.sh for installation instructions"
+        log_info "Run ./scripts/setup.sh for installation instructions"
         exit 1
     fi
 
@@ -53,9 +54,9 @@ build_image() {
     export USER_UID=$(id -u)
     export USER_GID=$(id -g)
     export USERNAME="${USERNAME:-nvim}"
+    export CACHE_BUST=$(date +%s)
 
-    cd "$SCRIPT_DIR"
-    docker compose build
+    docker compose -f "$REPO_ROOT/docker/compose.yml" build --build-arg CACHE_BUST="${CACHE_BUST}"
 
     log_success "Image built: jobe-nvim:${USER_UID} (user: ${USERNAME})"
 }
@@ -70,10 +71,10 @@ install_jvim() {
     log_info "Installing jvim to $target"
 
     if [[ -w "$INSTALL_DIR" ]]; then
-        ln -sf "$SCRIPT_DIR/jvim" "$target"
+        ln -sf "$REPO_ROOT/bin/jvim" "$target"
     else
         log_info "Requires sudo for $INSTALL_DIR"
-        sudo ln -sf "$SCRIPT_DIR/jvim" "$target"
+        sudo ln -sf "$REPO_ROOT/bin/jvim" "$target"
     fi
 
     log_success "Installed: $target"
