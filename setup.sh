@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # jvim installer
-# Usage: bash <(curl -s https://raw.githubusercontent.com/becktor/jvim/main/setup.sh)
+# Usage: sh -c "$(curl -fsSL https://raw.githubusercontent.com/becktor/jvim/main/setup.sh)"
 set -euo pipefail
 
 REPO_URL="${REPO_URL:-https://github.com/becktor/jvim.git}"

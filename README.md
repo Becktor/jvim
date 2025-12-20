@@ -5,7 +5,7 @@ Containerized Neovim development environment. Consistent config across any syste
 ## Install
 
 ```bash
-sh -c "$(curl -fsSL https://gist.githubusercontent.com/Becktor/595be091f6b94e138b96bc51b0389935/raw/setup.sh)"
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/becktor/jvim/main/setup.sh)"
 ```
 
 Then use:
