@@ -36,7 +36,7 @@ group "default" {
 
 target "nvim" {
   context    = "."
-  dockerfile = "Dockerfile"
+  dockerfile = "docker/Dockerfile"
 
   args = {
     NVIM_VERSION    = NVIM_VERSION
