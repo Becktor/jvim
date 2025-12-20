@@ -48,9 +48,12 @@ fi
 build_if_needed
 
 # Build volume mounts
+DOTFILES_PATH="${DOTFILES_PATH:-${HOME}/git/dotfiles}"
+
 MOUNTS=(
     -v "$MOUNT_DIR":/home/${USERNAME}/workspace
     -v jobe-nvim-data:/home/${USERNAME}/.local/share/nvim
+    -v "${DOTFILES_PATH}/nvim":/home/${USERNAME}/.config/nvim
 )
 
 # Mount SSH if exists

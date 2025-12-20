@@ -19,6 +19,9 @@ services:
       # Persist plugin data between runs
       - nvim-data:/home/${USERNAME:-nvim}/.local/share/nvim
 
+      # Mount nvim config from dotfiles (editable at runtime)
+      - ${DOTFILES_PATH:-~/git/dotfiles}/nvim:/home/${USERNAME:-nvim}/.config/nvim
+
       # Mount workspace/projects
       - ${WORKSPACE:-~/projects}:/home/${USERNAME:-nvim}/workspace
 

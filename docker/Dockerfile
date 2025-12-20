@@ -60,7 +60,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     locales \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
-    && locale-gen en_US.UTF-8
+    && locale-gen en_US.UTF-8 \
+    && ln -s $(which fdfind) /usr/local/bin/fd \
+    && npm install -g tree-sitter-cli
 
 ENV LANG=en_US.UTF-8
 ENV LANGUAGE=en_US:en
@@ -84,7 +86,7 @@ WORKDIR /home/${USERNAME}
 RUN mkdir -p /home/${USERNAME}/workspace \
     /home/${USERNAME}/.local/share/nvim
 
-# Clone nvim config from dotfiles repo (baked into image for consistency)
+# Clone nvim config and install plugins (will be overwritten by mount at runtime)
 ARG DOTFILES_REPO=https://github.com/Becktor/dotfiles.git
 ARG DOTFILES_BRANCH=main
 ARG CACHE_BUST=1
@@ -94,6 +96,7 @@ RUN git clone --depth 1 --branch ${DOTFILES_BRANCH} ${DOTFILES_REPO} /tmp/dotfil
     rm -rf /tmp/dotfiles
 
 # Install all nvim plugins via lazy.nvim
+# Note: Treesitter parsers install on first run and persist in the data volume
 RUN nvim --headless "+Lazy! sync" +qa
 
 ENV HOME=/home/${USERNAME}
