@@ -31,9 +31,18 @@ mkdir -p "$BIN_DIR"
 ln -sf "$INSTALL_DIR/bin/jvim" "$BIN_DIR/jvim"
 chmod +x "$INSTALL_DIR/bin/jvim"
 
-# Build docker image
-echo "Building docker image..."
-"$INSTALL_DIR/scripts/build.sh"
+# Get docker image (pull pre-built or build locally)
+IMAGE_NAME="ghcr.io/becktor/jvim:latest"
+LOCAL_TAG="jvim:$(id -u)"
+
+echo "Pulling pre-built image..."
+if docker pull "$IMAGE_NAME" 2>/dev/null; then
+    echo "Tagging as $LOCAL_TAG..."
+    docker tag "$IMAGE_NAME" "$LOCAL_TAG"
+else
+    echo "Pull failed, building locally..."
+    "$INSTALL_DIR/scripts/build.sh"
+fi
 
 echo ""
 echo "Installation complete!"

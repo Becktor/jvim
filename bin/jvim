@@ -13,8 +13,8 @@ export USERNAME="${USERNAME:-nvim}"
 
 # Build image if needed
 build_if_needed() {
-    if ! docker image inspect "jobe-nvim:${USER_UID}" &>/dev/null; then
-        echo "Building jobe-nvim image for UID ${USER_UID}..."
+    if ! docker image inspect "jvim:${USER_UID}" &>/dev/null; then
+        echo "Building jvim image for UID ${USER_UID}..."
         docker compose -f "$REPO_ROOT/docker/compose.yml" build
     fi
 }
@@ -52,7 +52,7 @@ DOTFILES_PATH="${DOTFILES_PATH:-${HOME}/git/dotfiles}"
 
 MOUNTS=(
     -v "$MOUNT_DIR":/home/${USERNAME}/workspace
-    -v jobe-nvim-data:/home/${USERNAME}/.local/share/nvim
+    -v jvim-data:/home/${USERNAME}/.local/share/nvim
 )
 
 # Only mount dotfiles if they exist on host
@@ -73,5 +73,5 @@ exec docker run --rm -it \
     -w /home/${USERNAME}/workspace \
     -e TERM="${TERM:-xterm-256color}" \
     -e COLORTERM="${COLORTERM:-truecolor}" \
-    "jobe-nvim:${USER_UID}" \
+    "jvim:${USER_UID}" \
     nvim "${NVIM_ARGS[@]}"

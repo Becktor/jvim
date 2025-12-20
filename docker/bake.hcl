@@ -1,9 +1,9 @@
 variable "REGISTRY" {
-  default = "ghcr.io"
+  default = "ghcr.io/becktor"
 }
 
 variable "IMAGE_NAME" {
-  default = "jobe/nvim"
+  default = "jvim"
 }
 
 variable "TAG" {
@@ -64,7 +64,7 @@ target "nvim" {
 target "dev" {
   inherits = ["nvim"]
 
-  tags = ["jobe-nvim:dev"]
+  tags = ["jvim:dev"]
 
   platforms = []  # Use local platform
 

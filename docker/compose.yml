@@ -9,8 +9,8 @@ services:
         USER_GID: ${USER_GID}
         DOTFILES_REPO: ${DOTFILES_REPO:-https://github.com/Becktor/dotfiles.git}
         DOTFILES_BRANCH: ${DOTFILES_BRANCH:-main}
-    image: jobe-nvim:${USER_UID:-1000}
-    container_name: jobe-nvim
+    image: jvim:${USER_UID:-1000}
+    container_name: jvim
     hostname: nvim-docker
     stdin_open: true
     tty: true
@@ -39,4 +39,4 @@ services:
 
 volumes:
   nvim-data:
-    name: jobe-nvim-data
+    name: jvim-data
