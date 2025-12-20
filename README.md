@@ -1,11 +1,11 @@
-# jobe-nvim
+# jvim
 
 Containerized Neovim development environment. Consistent config across any system with Docker.
 
 ## Install
 
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/becktor/jobe-nvim/main/setup.sh)
+sh -c "$(curl -fsSL https://gist.githubusercontent.com/Becktor/595be091f6b94e138b96bc51b0389935/raw/setup.sh)"
 ```
 
 Then use:
@@ -17,18 +17,24 @@ jvim src/                 # Open directory
 jvim -O file1.py file2.py # Multiple files
 ```
 
+## Uninstall
+
+```bash
+~/.jvim/scripts/uninstall.sh
+```
+
 ## Manual Install
 
 ```bash
-git clone https://github.com/becktor/jobe-nvim.git ~/.jobe-nvim
-~/.jobe-nvim/scripts/build.sh
-ln -s ~/.jobe-nvim/bin/jvim ~/.local/bin/jvim
+git clone https://github.com/becktor/jvim.git ~/.jvim
+~/.jvim/scripts/build.sh
+ln -s ~/.jvim/bin/jvim ~/.local/bin/jvim
 ```
 
 ## Structure
 
 ```
-jobe-nvim/
+jvim/
 ├── setup.sh              # Curl installer
 ├── docker/
 │   ├── Dockerfile        # Multi-stage build
@@ -36,7 +42,8 @@ jobe-nvim/
 │   └── bake.hcl          # Multi-platform builds
 ├── scripts/
 │   ├── build.sh          # Build image
-│   └── install.sh        # Build + install jvim
+│   ├── install.sh        # Build + install jvim
+│   └── uninstall.sh      # Remove jvim
 ├── bin/
 │   └── jvim              # Main launcher
 └── .env.example          # Configuration template
