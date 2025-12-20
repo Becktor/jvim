@@ -1,0 +1,39 @@
+services:
+  nvim:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        USERNAME: ${USERNAME:-nvim}
+        USER_UID: ${USER_UID}
+        USER_GID: ${USER_GID}
+        DOTFILES_REPO: ${DOTFILES_REPO:-https://github.com/Becktor/dotfiles.git}
+        DOTFILES_BRANCH: ${DOTFILES_BRANCH:-main}
+    image: jobe-nvim:${USER_UID:-1000}
+    container_name: jobe-nvim
+    hostname: nvim-docker
+    stdin_open: true
+    tty: true
+
+    volumes:
+      # Persist plugin data between runs
+      - nvim-data:/home/${USERNAME:-nvim}/.local/share/nvim
+
+      # Mount workspace/projects
+      - ${WORKSPACE:-~/projects}:/home/${USERNAME:-nvim}/workspace
+
+      # Mount SSH keys for git operations (optional)
+      # - ${SSH_DIR:-~/.ssh}:/home/${USERNAME:-nvim}/.ssh:ro
+
+      # Mount git config (optional - uncomment if ~/.gitconfig exists)
+      # - ${GITCONFIG:-~/.gitconfig}:/home/${USERNAME:-nvim}/.gitconfig:ro
+
+    environment:
+      - TERM=xterm-256color
+      - COLORTERM=truecolor
+
+    working_dir: /home/${USERNAME:-nvim}/workspace
+
+volumes:
+  nvim-data:
+    name: jobe-nvim-data

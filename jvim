@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# jvim - Containerized Neovim launcher
+# Usage: jvim [file|folder] [nvim args...]
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Export host UID/GID and username
+export USER_UID=$(id -u)
+export USER_GID=$(id -g)
+export USERNAME="${USERNAME:-nvim}"
+
+# Build image if needed
+build_if_needed() {
+    if ! docker image inspect "jobe-nvim:${USER_UID}" &>/dev/null; then
+        echo "Building jobe-nvim image for UID ${USER_UID}..."
+        (cd "$SCRIPT_DIR" && docker compose build)
+    fi
+}
+
+# Determine what to open
+TARGET="${1:-}"
+shift 2>/dev/null || true
+
+if [[ -z "$TARGET" ]]; then
+    # No arguments - open nvim in current directory
+    MOUNT_DIR="$(pwd)"
+    NVIM_ARGS=("$@")
+elif [[ -f "$TARGET" ]]; then
+    # It's a file - mount parent directory, open file
+    FULL_PATH="$(cd "$(dirname "$TARGET")" && pwd)/$(basename "$TARGET")"
+    MOUNT_DIR="$(dirname "$FULL_PATH")"
+    FILENAME="$(basename "$FULL_PATH")"
+    NVIM_ARGS=("$FILENAME" "$@")
+elif [[ -d "$TARGET" ]]; then
+    # It's a directory - mount it and open
+    MOUNT_DIR="$(cd "$TARGET" && pwd)"
+    NVIM_ARGS=("$@")
+else
+    # Doesn't exist yet - assume it's a new file
+    PARENT_DIR="$(cd "$(dirname "$TARGET")" 2>/dev/null && pwd || pwd)"
+    FILENAME="$(basename "$TARGET")"
+    MOUNT_DIR="$PARENT_DIR"
+    NVIM_ARGS=("$FILENAME" "$@")
+fi
+
+build_if_needed
+
+# Build volume mounts
+MOUNTS=(
+    -v "$MOUNT_DIR":/home/${USERNAME}/workspace
+    -v jobe-nvim-data:/home/${USERNAME}/.local/share/nvim
+)
+
+# Mount SSH if exists
+[[ -d "${HOME}/.ssh" ]] && MOUNTS+=(-v "${HOME}/.ssh":/home/${USERNAME}/.ssh:ro)
+
+# Mount gitconfig if exists and is a file
+[[ -f "${HOME}/.gitconfig" ]] && MOUNTS+=(-v "${HOME}/.gitconfig":/home/${USERNAME}/.gitconfig:ro)
+
+# Run nvim with the mounted directory
+exec docker run --rm -it \
+    "${MOUNTS[@]}" \
+    -w /home/${USERNAME}/workspace \
+    -e TERM="${TERM:-xterm-256color}" \
+    -e COLORTERM="${COLORTERM:-truecolor}" \
+    "jobe-nvim:${USER_UID}" \
+    nvim "${NVIM_ARGS[@]}"
