@@ -52,7 +52,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     nodejs \
     npm \
     python3 \
-    python3-pip \
     python3-venv \
     cargo \
     xclip \
@@ -62,7 +61,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && locale-gen en_US.UTF-8 \
     && ln -s $(which fdfind) /usr/local/bin/fd \
-    && npm install -g tree-sitter-cli markdownlint-cli2
+    && npm install -g tree-sitter-cli markdownlint-cli2 \
+    && curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR=/usr/local/bin sh
 
 ENV LANG=en_US.UTF-8
 ENV LANGUAGE=en_US:en
@@ -84,7 +84,12 @@ USER ${USERNAME}
 WORKDIR /home/${USERNAME}
 
 RUN mkdir -p /home/${USERNAME}/workspace \
-    /home/${USERNAME}/.local/share/nvim
+    /home/${USERNAME}/.local/share/nvim \
+    /home/${USERNAME}/.local/bin
+
+# Install Python tools via uv
+RUN uv tool install ty@latest
+ENV PATH="/home/${USERNAME}/.local/bin:$PATH"
 
 # Clone nvim config and install plugins (will be overwritten by mount at runtime)
 ARG DOTFILES_REPO=https://github.com/Becktor/dotfiles.git
