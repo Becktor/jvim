@@ -29,18 +29,17 @@ ln -s ~/.jobe-nvim/bin/jvim ~/.local/bin/jvim
 
 ```
 jobe-nvim/
+├── setup.sh              # Curl installer
 ├── docker/
 │   ├── Dockerfile        # Multi-stage build
 │   ├── compose.yml       # Docker Compose config
 │   └── bake.hcl          # Multi-platform builds
 ├── scripts/
-│   ├── install.sh        # Full installation
-│   ├── setup.sh          # Docker prerequisites check
-│   └── build.sh          # Build image only
+│   ├── build.sh          # Build image
+│   └── install.sh        # Build + install jvim
 ├── bin/
 │   └── jvim              # Main launcher
-├── .env.example          # Configuration template
-└── .gitignore
+└── .env.example          # Configuration template
 ```
 
 ## How It Works
