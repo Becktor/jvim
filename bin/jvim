@@ -54,6 +54,7 @@ MOUNTS=(
     -v "$MOUNT_DIR":/home/${USERNAME}/workspace
     -v jobe-nvim-data:/home/${USERNAME}/.local/share/nvim
     -v "${DOTFILES_PATH}/nvim":/home/${USERNAME}/.config/nvim
+    -v "${DOTFILES_PATH}":/home/${USERNAME}/git/dotfiles
 )
 
 # Mount SSH if exists
