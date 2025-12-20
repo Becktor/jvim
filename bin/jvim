@@ -67,9 +67,20 @@ fi
 # Mount gitconfig if exists and is a file
 [[ -f "${HOME}/.gitconfig" ]] && MOUNTS+=(-v "${HOME}/.gitconfig":/home/${USERNAME}/.gitconfig:ro)
 
+# Mount tmux socket for vim-tmux-navigator integration
+TMUX_VARS=()
+if [[ -n "${TMUX:-}" ]]; then
+    # Extract socket path from TMUX env var (format: /path/to/socket,pid,pane)
+    TMUX_SOCKET="${TMUX%%,*}"
+    TMUX_SOCKET_DIR="$(dirname "$TMUX_SOCKET")"
+    MOUNTS+=(-v "${TMUX_SOCKET_DIR}":"${TMUX_SOCKET_DIR}")
+    TMUX_VARS+=(-e "TMUX=${TMUX}")
+fi
+
 # Run nvim with the mounted directory
 exec docker run --rm -it \
     "${MOUNTS[@]}" \
+    ${TMUX_VARS[@]+"${TMUX_VARS[@]}"} \
     -w /home/${USERNAME}/workspace \
     -e TERM="${TERM:-xterm-256color}" \
     -e COLORTERM="${COLORTERM:-truecolor}" \

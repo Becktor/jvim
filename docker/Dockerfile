@@ -62,7 +62,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && locale-gen en_US.UTF-8 \
     && ln -s $(which fdfind) /usr/local/bin/fd \
-    && npm install -g tree-sitter-cli
+    && npm install -g tree-sitter-cli markdownlint-cli2
 
 ENV LANG=en_US.UTF-8
 ENV LANGUAGE=en_US:en
