@@ -1,0 +1,7 @@
+.git
+.github
+.claude
+.cache
+.env
+*.md
+LICENSE

@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1.4
 # Base image - built by CI, pushed to registry
-ARG BASE_IMAGE=ubuntu:24.04
+# Use same base for build and runtime to avoid glibc mismatch
+ARG BASE_IMAGE=debian:bookworm
 
 # =============================================================================
 # Stage 1: Build Neovim from source
@@ -18,45 +19,34 @@ RUN git clone --depth 1 --branch ${NVIM_VERSION} https://github.com/neovim/neovi
     cd neovim && make CMAKE_BUILD_TYPE=Release && make DESTDIR=/opt/nvim install
 
 # =============================================================================
-# Stage 2: Runtime base image
+# Stage 2: Build plugins (needs cargo, gcc, node for compilation)
 # =============================================================================
-FROM ${BASE_IMAGE} AS base
+FROM ${BASE_IMAGE} AS plugin-builder
 
-LABEL maintainer="jobe"
-LABEL description="Containerized Neovim - base image"
-
-# Install runtime dependencies
+# Install ALL build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    git curl wget unzip \
-    ripgrep fd-find fzf \
-    build-essential nodejs npm \
-    python3 python3-venv cargo \
-    xclip zsh locales ca-certificates \
+    git curl unzip ca-certificates \
+    build-essential cargo nodejs npm \
+    python3 python3-venv \
+    ripgrep \
     && rm -rf /var/lib/apt/lists/* \
-    && locale-gen en_US.UTF-8 \
-    && ln -s $(which fdfind) /usr/local/bin/fd \
-    && npm install -g tree-sitter-cli markdownlint-cli2 \
+    && npm install -g tree-sitter-cli \
     && curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR=/usr/local/bin sh
 
-ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8
-
-# Copy Neovim from builder
+# Copy neovim
 COPY --from=neovim-builder /opt/nvim/usr/local /usr/local
 
-# Create nvim user (UID/GID adjusted at runtime via entrypoint)
-RUN groupmod -n nvim ubuntu && \
-    usermod -l nvim -d /home/nvim -m ubuntu && \
-    chsh -s /bin/zsh nvim && \
-    mkdir -p /home/nvim/.config /home/nvim/.local/share/nvim \
-             /home/nvim/workspace /home/nvim/.local/bin && \
+# Create user for plugin installation
+RUN useradd -m -s /bin/bash nvim && \
+    mkdir -p /home/nvim/.config /home/nvim/.local/share/nvim && \
     chown -R nvim:nvim /home/nvim
-
-# Install Python tools via uv
 USER nvim
 WORKDIR /home/nvim
+
+# Install Python tools
 RUN uv tool install ty@latest
 
-# Clone nvim config and install plugins
+# Clone config and install plugins (this compiles blink.cmp, treesitter, etc.)
 ARG DOTFILES_REPO=https://github.com/Becktor/dotfiles.git
 ARG DOTFILES_BRANCH=main
 ARG CACHE_BUST=1
@@ -65,8 +55,48 @@ RUN git clone --depth 1 --branch ${DOTFILES_BRANCH} ${DOTFILES_REPO} /tmp/dotfil
     cp -r /tmp/dotfiles/nvim /home/nvim/.config/nvim && \
     rm -rf /tmp/dotfiles
 
-# Install all nvim plugins via lazy.nvim
 RUN nvim --headless "+Lazy! sync" +qa
+
+# =============================================================================
+# Stage 3: Minimal runtime image
+# =============================================================================
+FROM debian:bookworm-slim AS base
+
+LABEL maintainer="jobe"
+LABEL description="Containerized Neovim - base image"
+
+# Install ONLY runtime dependencies (no compilers!)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git curl wget unzip \
+    ripgrep fd-find fzf \
+    python3 python3-venv \
+    xclip zsh locales ca-certificates \
+    libluajit-5.1-2 \
+    && rm -rf /var/lib/apt/lists/* \
+    && sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && locale-gen \
+    && ln -s $(which fdfind) /usr/local/bin/fd
+
+ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8
+
+# Copy neovim binary
+COPY --from=neovim-builder /opt/nvim/usr/local /usr/local
+
+# Create nvim user
+RUN groupadd -g 1000 nvim && \
+    useradd -m -u 1000 -g nvim -s /bin/zsh nvim && \
+    mkdir -p /home/nvim/.config /home/nvim/.local/share/nvim \
+             /home/nvim/workspace /home/nvim/.local/bin && \
+    chown -R nvim:nvim /home/nvim
+
+# Copy uv binary
+COPY --from=plugin-builder /usr/local/bin/uv /usr/local/bin/uv
+
+# Copy pre-built plugins and tools from builder
+COPY --from=plugin-builder --chown=nvim:nvim /home/nvim/.config/nvim /home/nvim/.config/nvim
+COPY --from=plugin-builder --chown=nvim:nvim /home/nvim/.local /home/nvim/.local
+
+USER nvim
+WORKDIR /home/nvim
 
 ENV USERNAME=nvim
 ENV HOME=/home/nvim

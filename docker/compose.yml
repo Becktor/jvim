@@ -14,14 +14,9 @@ services:
     tty: true
 
     volumes:
-      # Persist plugin data between runs
-      - nvim-data:/home/nvim/.local/share/nvim
-
-      # Mount nvim config from dotfiles (editable at runtime)
-      - ${DOTFILES_PATH:-~/git/dotfiles}/nvim:/home/nvim/.config/nvim
-
-      # Mount workspace/projects
-      - ${WORKSPACE:-~/projects}:/home/nvim/workspace
+      - jvim-data:/home/nvim/.local/share/nvim
+      - ${DOTFILES_PATH:-${HOME}/git/dotfiles}/nvim:/home/nvim/.config/nvim
+      - ${WORKSPACE:-${HOME}/projects}:/home/nvim/workspace
 
     environment:
       - TERM=xterm-256color
@@ -30,5 +25,4 @@ services:
     working_dir: /home/nvim/workspace
 
 volumes:
-  nvim-data:
-    name: jvim-data
+  jvim-data:
