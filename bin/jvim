@@ -9,12 +9,18 @@ REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 # Export host UID/GID and username
 export USER_UID=$(id -u)
 export USER_GID=$(id -g)
-export USERNAME="${USERNAME:-nvim}"
+export USERNAME="${USERNAME:-$(whoami)}"
+
+# Detect host tmux version (for vim-tmux-navigator compatibility)
+if command -v tmux &>/dev/null; then
+    export TMUX_VERSION=$(tmux -V | sed 's/tmux //')
+fi
 
 # Build image if needed
 build_if_needed() {
     if ! docker image inspect "jvim:${USER_UID}" &>/dev/null; then
         echo "Building jvim image for UID ${USER_UID}..."
+        [[ -n "${TMUX_VERSION:-}" ]] && echo "Including tmux ${TMUX_VERSION} for vim-tmux-navigator..."
         docker compose -f "$REPO_ROOT/docker/compose.yml" build
     fi
 }
@@ -67,10 +73,9 @@ fi
 # Mount gitconfig if exists and is a file
 [[ -f "${HOME}/.gitconfig" ]] && MOUNTS+=(-v "${HOME}/.gitconfig":/home/${USERNAME}/.gitconfig:ro)
 
-# Mount tmux socket for vim-tmux-navigator integration
+# Mount tmux socket for vim-tmux-navigator integration (nvim → tmux navigation)
 TMUX_VARS=()
 if [[ -n "${TMUX:-}" ]]; then
-    # Extract socket path from TMUX env var (format: /path/to/socket,pid,pane)
     TMUX_SOCKET="${TMUX%%,*}"
     TMUX_SOCKET_DIR="$(dirname "$TMUX_SOCKET")"
     MOUNTS+=(-v "${TMUX_SOCKET_DIR}":"${TMUX_SOCKET_DIR}")
@@ -78,10 +83,13 @@ if [[ -n "${TMUX:-}" ]]; then
 fi
 
 # Run nvim with the mounted directory
-exec docker run --rm -it \
+# Use exec -a to set process name to "jvim" for vim-tmux-navigator detection
+exec -a jvim docker run --rm -it \
     "${MOUNTS[@]}" \
     ${TMUX_VARS[@]+"${TMUX_VARS[@]}"} \
     -w /home/${USERNAME}/workspace \
+    -e HOST_UID="${USER_UID}" \
+    -e HOST_GID="${USER_GID}" \
     -e TERM="${TERM:-xterm-256color}" \
     -e COLORTERM="${COLORTERM:-truecolor}" \
     "jvim:${USER_UID}" \

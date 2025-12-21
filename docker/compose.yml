@@ -4,11 +4,13 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        USERNAME: ${USERNAME:-nvim}
+        USERNAME: ${USERNAME:-user}
         USER_UID: ${USER_UID}
         USER_GID: ${USER_GID}
         DOTFILES_REPO: ${DOTFILES_REPO:-https://github.com/Becktor/dotfiles.git}
         DOTFILES_BRANCH: ${DOTFILES_BRANCH:-main}
+        # Pass host tmux version (empty = skip tmux build)
+        TMUX_VERSION: ${TMUX_VERSION:-}
     image: jvim:${USER_UID:-1000}
     container_name: jvim
     hostname: nvim-docker
@@ -17,25 +19,25 @@ services:
 
     volumes:
       # Persist plugin data between runs
-      - nvim-data:/home/${USERNAME:-nvim}/.local/share/nvim
+      - nvim-data:/home/${USERNAME:-user}/.local/share/nvim
 
       # Mount nvim config from dotfiles (editable at runtime)
-      - ${DOTFILES_PATH:-~/git/dotfiles}/nvim:/home/${USERNAME:-nvim}/.config/nvim
+      - ${DOTFILES_PATH:-~/git/dotfiles}/nvim:/home/${USERNAME:-user}/.config/nvim
 
       # Mount workspace/projects
-      - ${WORKSPACE:-~/projects}:/home/${USERNAME:-nvim}/workspace
+      - ${WORKSPACE:-~/projects}:/home/${USERNAME:-user}/workspace
 
       # Mount SSH keys for git operations (optional)
-      # - ${SSH_DIR:-~/.ssh}:/home/${USERNAME:-nvim}/.ssh:ro
+      # - ${SSH_DIR:-~/.ssh}:/home/${USERNAME:-user}/.ssh:ro
 
       # Mount git config (optional - uncomment if ~/.gitconfig exists)
-      # - ${GITCONFIG:-~/.gitconfig}:/home/${USERNAME:-nvim}/.gitconfig:ro
+      # - ${GITCONFIG:-~/.gitconfig}:/home/${USERNAME:-user}/.gitconfig:ro
 
     environment:
       - TERM=xterm-256color
       - COLORTERM=truecolor
 
-    working_dir: /home/${USERNAME:-nvim}/workspace
+    working_dir: /home/${USERNAME:-user}/workspace
 
 volumes:
   nvim-data:
