@@ -1,0 +1,78 @@
+# syntax=docker/dockerfile:1.4
+# Base image - built by CI, pushed to registry
+ARG BASE_IMAGE=ubuntu:24.04
+
+# =============================================================================
+# Stage 1: Build Neovim from source
+# =============================================================================
+FROM ${BASE_IMAGE} AS neovim-builder
+
+ARG NVIM_VERSION=v0.11.0
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential cmake curl gettext git ninja-build unzip ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+RUN git clone --depth 1 --branch ${NVIM_VERSION} https://github.com/neovim/neovim.git && \
+    cd neovim && make CMAKE_BUILD_TYPE=Release && make DESTDIR=/opt/nvim install
+
+# =============================================================================
+# Stage 2: Runtime base image
+# =============================================================================
+FROM ${BASE_IMAGE} AS base
+
+LABEL maintainer="jobe"
+LABEL description="Containerized Neovim - base image"
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git curl wget unzip \
+    ripgrep fd-find fzf \
+    build-essential nodejs npm \
+    python3 python3-venv cargo \
+    xclip zsh locales ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && locale-gen en_US.UTF-8 \
+    && ln -s $(which fdfind) /usr/local/bin/fd \
+    && npm install -g tree-sitter-cli markdownlint-cli2 \
+    && curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR=/usr/local/bin sh
+
+ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8
+
+# Copy Neovim from builder
+COPY --from=neovim-builder /opt/nvim/usr/local /usr/local
+
+# Create nvim user (UID/GID adjusted at runtime via entrypoint)
+RUN groupmod -n nvim ubuntu && \
+    usermod -l nvim -d /home/nvim -m ubuntu && \
+    chsh -s /bin/zsh nvim && \
+    mkdir -p /home/nvim/.config /home/nvim/.local/share/nvim \
+             /home/nvim/workspace /home/nvim/.local/bin && \
+    chown -R nvim:nvim /home/nvim
+
+# Install Python tools via uv
+USER nvim
+WORKDIR /home/nvim
+RUN uv tool install ty@latest
+
+# Clone nvim config and install plugins
+ARG DOTFILES_REPO=https://github.com/Becktor/dotfiles.git
+ARG DOTFILES_BRANCH=main
+ARG CACHE_BUST=1
+
+RUN git clone --depth 1 --branch ${DOTFILES_BRANCH} ${DOTFILES_REPO} /tmp/dotfiles && \
+    cp -r /tmp/dotfiles/nvim /home/nvim/.config/nvim && \
+    rm -rf /tmp/dotfiles
+
+# Install all nvim plugins via lazy.nvim
+RUN nvim --headless "+Lazy! sync" +qa
+
+ENV USERNAME=nvim
+ENV HOME=/home/nvim
+ENV XDG_CONFIG_HOME=/home/nvim/.config
+ENV XDG_DATA_HOME=/home/nvim/.local/share
+ENV PATH="/home/nvim/.local/bin:$PATH"
+ENV EDITOR=nvim VISUAL=nvim
+
+CMD ["nvim"]

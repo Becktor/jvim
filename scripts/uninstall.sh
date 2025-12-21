@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
-# jvim uninstaller
+# Uninstall jvim
 set -euo pipefail
 
-INSTALL_DIR="${INSTALL_DIR:-$HOME/.jvim}"
 BIN_DIR="${BIN_DIR:-$HOME/.local/bin}"
 
 echo "Uninstalling jvim..."
@@ -13,23 +12,16 @@ if [[ -L "$BIN_DIR/jvim" ]]; then
     echo "Removed $BIN_DIR/jvim"
 fi
 
-# Remove install directory
-if [[ -d "$INSTALL_DIR" ]]; then
-    rm -rf "$INSTALL_DIR"
-    echo "Removed $INSTALL_DIR"
-fi
-
-# Remove docker image
-if docker image inspect jvim &>/dev/null; then
-    docker rmi jvim
-    echo "Removed docker image"
-fi
+# Remove docker images (jvim:UID format)
+for img in $(docker images --format '{{.Repository}}:{{.Tag}}' | grep '^jvim:' 2>/dev/null || true); do
+    docker rmi "$img" 2>/dev/null && echo "Removed image: $img"
+done
 
 # Remove docker volume
 if docker volume inspect jvim-data &>/dev/null; then
     docker volume rm jvim-data
-    echo "Removed docker volume"
+    echo "Removed volume: jvim-data"
 fi
 
 echo ""
-echo "jvim has been uninstalled."
+echo "jvim uninstalled."

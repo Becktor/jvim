@@ -6,10 +6,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 
-# Export host UID/GID and username
-export USER_UID=$(id -u)
-export USER_GID=$(id -g)
-export USERNAME="${USERNAME:-$(whoami)}"
+USER_UID=$(id -u)
+USER_GID=$(id -g)
+IMAGE="jvim:${USER_UID}"
 
 # Detect host tmux version (for vim-tmux-navigator compatibility)
 if command -v tmux &>/dev/null; then
@@ -18,9 +17,10 @@ fi
 
 # Build image if needed
 build_if_needed() {
-    if ! docker image inspect "jvim:${USER_UID}" &>/dev/null; then
-        echo "Building jvim image for UID ${USER_UID}..."
+    if ! docker image inspect "$IMAGE" &>/dev/null; then
+        echo "Building jvim image..."
         [[ -n "${TMUX_VERSION:-}" ]] && echo "Including tmux ${TMUX_VERSION} for vim-tmux-navigator..."
+        export USER_UID USER_GID
         docker compose -f "$REPO_ROOT/docker/compose.yml" build
     fi
 }
@@ -30,21 +30,17 @@ TARGET="${1:-}"
 shift 2>/dev/null || true
 
 if [[ -z "$TARGET" ]]; then
-    # No arguments - open nvim in current directory
     MOUNT_DIR="$(pwd)"
     NVIM_ARGS=("$@")
 elif [[ -f "$TARGET" ]]; then
-    # It's a file - mount parent directory, open file
     FULL_PATH="$(cd "$(dirname "$TARGET")" && pwd)/$(basename "$TARGET")"
     MOUNT_DIR="$(dirname "$FULL_PATH")"
     FILENAME="$(basename "$FULL_PATH")"
     NVIM_ARGS=("$FILENAME" "$@")
 elif [[ -d "$TARGET" ]]; then
-    # It's a directory - mount it and open
     MOUNT_DIR="$(cd "$TARGET" && pwd)"
     NVIM_ARGS=("$@")
 else
-    # Doesn't exist yet - assume it's a new file
     PARENT_DIR="$(cd "$(dirname "$TARGET")" 2>/dev/null && pwd || pwd)"
     FILENAME="$(basename "$TARGET")"
     MOUNT_DIR="$PARENT_DIR"
@@ -53,27 +49,27 @@ fi
 
 build_if_needed
 
-# Build volume mounts
+# Build volume mounts (nvim is the fixed username in container)
 DOTFILES_PATH="${DOTFILES_PATH:-${HOME}/git/dotfiles}"
 
 MOUNTS=(
-    -v "$MOUNT_DIR":/home/${USERNAME}/workspace
-    -v jvim-data:/home/${USERNAME}/.local/share/nvim
+    -v "$MOUNT_DIR":/home/nvim/workspace
+    -v jvim-data:/home/nvim/.local/share/nvim
 )
 
-# Only mount dotfiles if they exist on host
+# Mount dotfiles if they exist
 if [[ -d "${DOTFILES_PATH}/nvim" ]]; then
-    MOUNTS+=(-v "${DOTFILES_PATH}/nvim":/home/${USERNAME}/.config/nvim)
-    MOUNTS+=(-v "${DOTFILES_PATH}":/home/${USERNAME}/git/dotfiles)
+    MOUNTS+=(-v "${DOTFILES_PATH}/nvim":/home/nvim/.config/nvim)
+    MOUNTS+=(-v "${DOTFILES_PATH}":/home/nvim/git/dotfiles)
 fi
 
 # Mount SSH if exists
-[[ -d "${HOME}/.ssh" ]] && MOUNTS+=(-v "${HOME}/.ssh":/home/${USERNAME}/.ssh:ro)
+[[ -d "${HOME}/.ssh" ]] && MOUNTS+=(-v "${HOME}/.ssh":/home/nvim/.ssh:ro)
 
-# Mount gitconfig if exists and is a file
-[[ -f "${HOME}/.gitconfig" ]] && MOUNTS+=(-v "${HOME}/.gitconfig":/home/${USERNAME}/.gitconfig:ro)
+# Mount gitconfig if exists
+[[ -f "${HOME}/.gitconfig" ]] && MOUNTS+=(-v "${HOME}/.gitconfig":/home/nvim/.gitconfig:ro)
 
-# Mount tmux socket for vim-tmux-navigator integration (nvim → tmux navigation)
+# Mount tmux socket for vim-tmux-navigator (nvim → tmux navigation)
 TMUX_VARS=()
 if [[ -n "${TMUX:-}" ]]; then
     TMUX_SOCKET="${TMUX%%,*}"
@@ -82,15 +78,14 @@ if [[ -n "${TMUX:-}" ]]; then
     TMUX_VARS+=(-e "TMUX=${TMUX}")
 fi
 
-# Run nvim with the mounted directory
-# Use exec -a to set process name to "jvim" for vim-tmux-navigator detection
+# Run nvim (exec -a sets process name to "jvim" for vim-tmux-navigator detection)
 exec -a jvim docker run --rm -it \
     "${MOUNTS[@]}" \
     ${TMUX_VARS[@]+"${TMUX_VARS[@]}"} \
-    -w /home/${USERNAME}/workspace \
+    -w /home/nvim/workspace \
     -e HOST_UID="${USER_UID}" \
     -e HOST_GID="${USER_GID}" \
     -e TERM="${TERM:-xterm-256color}" \
     -e COLORTERM="${COLORTERM:-truecolor}" \
-    "jvim:${USER_UID}" \
+    "$IMAGE" \
     nvim "${NVIM_ARGS[@]}"

@@ -11,7 +11,7 @@ variable "TAG" {
 }
 
 variable "NVIM_VERSION" {
-  default = "v0.11.5"
+  default = "v0.11.0"
 }
 
 variable "DOTFILES_REPO" {
@@ -22,28 +22,24 @@ variable "DOTFILES_BRANCH" {
   default = "main"
 }
 
-variable "USER_UID" {
-  default = "1000"
-}
-
-variable "USER_GID" {
-  default = "1000"
+variable "TMUX_VERSION" {
+  default = ""
 }
 
 group "default" {
-  targets = ["nvim"]
+  targets = ["base"]
 }
 
-target "nvim" {
+# Base image - generic, built by CI and pushed to registry
+target "base" {
   context    = "."
-  dockerfile = "docker/Dockerfile"
+  dockerfile = "docker/Dockerfile.base"
+  target     = "base"
 
   args = {
     NVIM_VERSION    = NVIM_VERSION
     DOTFILES_REPO   = DOTFILES_REPO
     DOTFILES_BRANCH = DOTFILES_BRANCH
-    USER_UID        = USER_UID
-    USER_GID        = USER_GID
   }
 
   tags = [
@@ -60,9 +56,22 @@ target "nvim" {
   cache-to   = ["type=gha,mode=max"]
 }
 
-# Development target - single platform, no push
+# CI target - multi-platform base image with push
+target "ci" {
+  inherits = ["base"]
+  output   = ["type=registry"]
+}
+
+# Dev target - local build with host-specific config
 target "dev" {
-  inherits = ["nvim"]
+  context    = "."
+  dockerfile = "docker/Dockerfile"
+  target     = "dev"
+
+  args = {
+    JVIM_BASE    = "${REGISTRY}/${IMAGE_NAME}:${TAG}"
+    TMUX_VERSION = TMUX_VERSION
+  }
 
   tags = ["jvim:dev"]
 
@@ -72,14 +81,4 @@ target "dev" {
   cache-to   = ["type=local,dest=.cache/buildx,mode=max"]
 
   output = ["type=docker"]
-}
-
-# CI target - multi-platform with push
-target "ci" {
-  inherits = ["nvim"]
-
-  cache-from = ["type=gha"]
-  cache-to   = ["type=gha,mode=max"]
-
-  output = ["type=registry"]
 }
