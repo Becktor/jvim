@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 # jvim - Containerized Neovim launcher
 # Usage: jvim [file|folder] [nvim args...]
+
+# Re-exec with "jvim" as process name for tmux/ps display
+if [[ -z "${JVIM_REEXEC:-}" ]]; then
+    export JVIM_REEXEC=1
+    exec -a jvim bash "${BASH_SOURCE[0]}" "$@"
+fi
+
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -49,9 +56,10 @@ build_if_needed
 
 # Build volume mounts
 NVIM_CONFIG_PATH="${NVIM_CONFIG_PATH:-${HOME}/git/dotfiles/dev-env/nvim}"
+WORKDIR_NAME="$(basename "$MOUNT_DIR")"
 
 MOUNTS=(
-    -v "$MOUNT_DIR":/home/${USERNAME}/workspace
+    -v "$MOUNT_DIR":/home/${USERNAME}/${WORKDIR_NAME}
     -v jvim-data:/home/${USERNAME}/.local/share/nvim
 )
 
@@ -77,10 +85,10 @@ if [[ -n "${TMUX:-}" ]]; then
 fi
 
 # Run nvim with the mounted directory
-exec docker run --rm -it \
+docker run --rm -it \
     "${MOUNTS[@]}" \
     ${TMUX_VARS[@]+"${TMUX_VARS[@]}"} \
-    -w /home/${USERNAME}/workspace \
+    -w /home/${USERNAME}/${WORKDIR_NAME} \
     -e TERM="${TERM:-xterm-256color}" \
     -e COLORTERM="${COLORTERM:-truecolor}" \
     "jvim:${USER_UID}" \
