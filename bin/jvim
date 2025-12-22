@@ -48,17 +48,16 @@ fi
 build_if_needed
 
 # Build volume mounts
-DOTFILES_PATH="${DOTFILES_PATH:-${HOME}/git/dotfiles}"
+NVIM_CONFIG_PATH="${NVIM_CONFIG_PATH:-${HOME}/git/dotfiles/dev-env/nvim}"
 
 MOUNTS=(
     -v "$MOUNT_DIR":/home/${USERNAME}/workspace
     -v jvim-data:/home/${USERNAME}/.local/share/nvim
 )
 
-# Only mount dotfiles if they exist on host
-if [[ -d "${DOTFILES_PATH}/nvim" ]]; then
-    MOUNTS+=(-v "${DOTFILES_PATH}/nvim":/home/${USERNAME}/.config/nvim)
-    MOUNTS+=(-v "${DOTFILES_PATH}":/home/${USERNAME}/git/dotfiles)
+# Only mount nvim config if it exists on host
+if [[ -d "${NVIM_CONFIG_PATH}" ]]; then
+    MOUNTS+=(-v "${NVIM_CONFIG_PATH}":/home/${USERNAME}/.config/nvim)
 fi
 
 # Mount SSH if exists

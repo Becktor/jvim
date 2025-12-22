@@ -92,13 +92,13 @@ RUN uv tool install ty@latest
 ENV PATH="/home/${USERNAME}/.local/bin:$PATH"
 
 # Clone nvim config and install plugins (will be overwritten by mount at runtime)
-ARG DOTFILES_REPO=https://github.com/Becktor/dotfiles.git
-ARG DOTFILES_BRANCH=main
+ARG NVIM_CONFIG_REPO=https://github.com/Becktor/dev-env.git
+ARG NVIM_CONFIG_BRANCH=main
 ARG CACHE_BUST=1
 
-RUN git clone --depth 1 --branch ${DOTFILES_BRANCH} ${DOTFILES_REPO} /tmp/dotfiles && \
-    cp -r /tmp/dotfiles/nvim /home/${USERNAME}/.config/nvim && \
-    rm -rf /tmp/dotfiles
+RUN git clone --depth 1 --branch ${NVIM_CONFIG_BRANCH} ${NVIM_CONFIG_REPO} /tmp/nvim-config && \
+    cp -r /tmp/nvim-config/nvim /home/${USERNAME}/.config/nvim && \
+    rm -rf /tmp/nvim-config
 
 # Install all nvim plugins via lazy.nvim
 # Note: Treesitter parsers install on first run and persist in the data volume

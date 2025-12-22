@@ -14,11 +14,11 @@ variable "NVIM_VERSION" {
   default = "v0.11.5"
 }
 
-variable "DOTFILES_REPO" {
-  default = "https://github.com/Becktor/dotfiles.git"
+variable "NVIM_CONFIG_REPO" {
+  default = "https://github.com/Becktor/dev-env.git"
 }
 
-variable "DOTFILES_BRANCH" {
+variable "NVIM_CONFIG_BRANCH" {
   default = "main"
 }
 
@@ -39,11 +39,11 @@ target "nvim" {
   dockerfile = "docker/Dockerfile"
 
   args = {
-    NVIM_VERSION    = NVIM_VERSION
-    DOTFILES_REPO   = DOTFILES_REPO
-    DOTFILES_BRANCH = DOTFILES_BRANCH
-    USER_UID        = USER_UID
-    USER_GID        = USER_GID
+    NVIM_VERSION       = NVIM_VERSION
+    NVIM_CONFIG_REPO   = NVIM_CONFIG_REPO
+    NVIM_CONFIG_BRANCH = NVIM_CONFIG_BRANCH
+    USER_UID           = USER_UID
+    USER_GID           = USER_GID
   }
 
   tags = [
