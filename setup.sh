@@ -1,7 +1,7 @@
-#!/usr/bin/env bash
+#!/bin/sh
 # jvim installer
-# Usage: sh -c "$(curl -fsSL https://raw.githubusercontent.com/becktor/jvim/main/setup.sh)"
-set -euo pipefail
+# Usage: curl -fsSL https://raw.githubusercontent.com/becktor/jvim/main/setup.sh | sh
+set -eu
 
 REPO_URL="${REPO_URL:-https://github.com/becktor/jvim.git}"
 INSTALL_DIR="${INSTALL_DIR:-$HOME/.jvim}"
@@ -10,13 +10,13 @@ BIN_DIR="${BIN_DIR:-$HOME/.local/bin}"
 echo "Installing jvim..."
 
 # Check for docker
-if ! command -v docker &>/dev/null; then
+if ! command -v docker >/dev/null 2>&1; then
     echo "Error: docker is required but not installed."
     exit 1
 fi
 
 # Clone or update repo
-if [[ -d "$INSTALL_DIR" ]]; then
+if [ -d "$INSTALL_DIR" ]; then
     echo "Updating existing installation..."
     git -C "$INSTALL_DIR" pull --ff-only
 else
