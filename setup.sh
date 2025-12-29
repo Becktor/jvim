@@ -11,8 +11,44 @@ echo "Installing jvim..."
 
 # Check for docker
 if ! command -v docker >/dev/null 2>&1; then
-    echo "Error: docker is required but not installed."
-    exit 1
+    echo "Docker is not installed. Attempting to install..."
+
+    case "$(uname -s)" in
+        Linux)
+            # Install Docker using official convenience script
+            curl -fsSL https://get.docker.com | sh
+
+            # Add current user to docker group (avoids needing sudo for docker commands)
+            if [ -n "${SUDO_USER:-}" ]; then
+                sudo usermod -aG docker "$SUDO_USER"
+            elif [ "$(id -u)" -ne 0 ]; then
+                sudo usermod -aG docker "$(whoami)"
+            fi
+
+            echo "Docker installed. You may need to log out and back in for group changes to take effect."
+            ;;
+        Darwin)
+            if command -v brew >/dev/null 2>&1; then
+                echo "Installing Docker via Homebrew..."
+                brew install --cask docker
+                echo "Please open Docker Desktop to complete setup, then re-run this script."
+                exit 1
+            else
+                echo "Error: Please install Docker Desktop from https://docker.com/products/docker-desktop"
+                exit 1
+            fi
+            ;;
+        *)
+            echo "Error: Unsupported OS. Please install Docker manually."
+            exit 1
+            ;;
+    esac
+
+    # Verify docker is now available
+    if ! command -v docker >/dev/null 2>&1; then
+        echo "Error: Docker installation failed."
+        exit 1
+    fi
 fi
 
 # Clone or update repo
