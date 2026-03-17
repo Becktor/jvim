@@ -69,7 +69,7 @@ chmod +x "$INSTALL_DIR/bin/jvim"
 
 # Get docker image (pull pre-built or build locally)
 IMAGE_NAME="ghcr.io/becktor/jvim:latest"
-LOCAL_TAG="jvim:$(id -u)"
+LOCAL_TAG="jvim:latest"
 
 echo "Pulling pre-built image..."
 if docker pull "$IMAGE_NAME" 2>/dev/null; then

@@ -20,8 +20,8 @@ if [[ -d "$INSTALL_DIR" ]]; then
 fi
 
 # Remove docker image
-if docker image inspect jvim &>/dev/null; then
-    docker rmi jvim
+if docker image inspect jvim:latest &>/dev/null; then
+    docker rmi jvim:latest
     echo "Removed docker image"
 fi
 
