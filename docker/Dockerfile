@@ -115,7 +115,7 @@ ENV VISUAL=nvim
 USER root
 
 # Copy entrypoint script for runtime UID/GID remapping
-COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 ENTRYPOINT ["entrypoint.sh"]

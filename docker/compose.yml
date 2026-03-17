@@ -1,8 +1,8 @@
 services:
   nvim:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: docker/Dockerfile
       args:
         NVIM_CONFIG_REPO: ${NVIM_CONFIG_REPO:-https://github.com/Becktor/dev-env.git}
         NVIM_CONFIG_BRANCH: ${NVIM_CONFIG_BRANCH:-main}
