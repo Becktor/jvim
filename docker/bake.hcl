@@ -22,14 +22,6 @@ variable "NVIM_CONFIG_BRANCH" {
   default = "main"
 }
 
-variable "USER_UID" {
-  default = "1000"
-}
-
-variable "USER_GID" {
-  default = "1000"
-}
-
 group "default" {
   targets = ["nvim"]
 }
@@ -42,8 +34,6 @@ target "nvim" {
     NVIM_VERSION       = NVIM_VERSION
     NVIM_CONFIG_REPO   = NVIM_CONFIG_REPO
     NVIM_CONFIG_BRANCH = NVIM_CONFIG_BRANCH
-    USER_UID           = USER_UID
-    USER_GID           = USER_GID
   }
 
   tags = [

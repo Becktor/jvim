@@ -13,15 +13,15 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 
-# Export host UID/GID and username
-export USER_UID=$(id -u)
-export USER_GID=$(id -g)
-export USERNAME="${USERNAME:-nvim}"
+# Host UID/GID passed to the container at runtime for permission remapping
+HOST_UID=$(id -u)
+HOST_GID=$(id -g)
+USERNAME="nvim"
 
 # Build image if needed
 build_if_needed() {
-    if ! docker image inspect "jvim:${USER_UID}" &>/dev/null; then
-        echo "Building jvim image for UID ${USER_UID}..."
+    if ! docker image inspect "jvim:latest" &>/dev/null; then
+        echo "Building jvim image..."
         docker compose -f "$REPO_ROOT/docker/compose.yml" build
     fi
 }
@@ -89,7 +89,9 @@ docker run --rm -it \
     "${MOUNTS[@]}" \
     ${TMUX_VARS[@]+"${TMUX_VARS[@]}"} \
     -w /home/${USERNAME}/${WORKDIR_NAME} \
+    -e HOST_UID="${HOST_UID}" \
+    -e HOST_GID="${HOST_GID}" \
     -e TERM="${TERM:-xterm-256color}" \
     -e COLORTERM="${COLORTERM:-truecolor}" \
-    "jvim:${USER_UID}" \
+    "jvim:latest" \
     nvim "${NVIM_ARGS[@]}"

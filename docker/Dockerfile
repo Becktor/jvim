@@ -56,6 +56,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     cargo \
     xclip \
     zsh \
+    gosu \
     locales \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
@@ -110,4 +111,12 @@ ENV XDG_DATA_HOME=/home/${USERNAME}/.local/share
 ENV EDITOR=nvim
 ENV VISUAL=nvim
 
+# Switch back to root so the entrypoint can remap UID/GID at runtime
+USER root
+
+# Copy entrypoint script for runtime UID/GID remapping
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+ENTRYPOINT ["entrypoint.sh"]
 CMD ["nvim"]
