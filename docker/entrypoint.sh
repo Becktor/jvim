@@ -21,18 +21,31 @@ if [ "$(id -u)" = "0" ]; then
         usermod -u "$TARGET_UID" -g "$TARGET_GID" "$USERNAME" 2>/dev/null || true
     fi
 
-    # Fix ownership of key directories (avoids slow full-home recursive chown)
-    chown -R "$USERNAME:$USERNAME" \
-        "/home/$USERNAME/.config" \
-        "/home/$USERNAME/.local" \
-        2>/dev/null || true
+    # Sentinel file in the jvim-data volume - tracks whether chown has been run
+    # for the current UID/GID pair. Skips the slow chown on subsequent starts.
+    SENTINEL_DIR="/home/$USERNAME/.local/share/nvim"
+    SENTINEL="$SENTINEL_DIR/.jvim-chown-${TARGET_UID}-${TARGET_GID}"
 
-    # Ensure workspace and cache dirs are writable
-    for dir in "/home/$USERNAME/.cache" "/home/$USERNAME/workspace"; do
-        if [ -d "$dir" ]; then
-            chown "$USERNAME:$USERNAME" "$dir"
-        fi
-    done
+    if [ ! -f "$SENTINEL" ]; then
+        # Fix ownership of key directories (avoids slow full-home recursive chown)
+        chown -R "$USERNAME:$USERNAME" \
+            "/home/$USERNAME/.config" \
+            "/home/$USERNAME/.local" \
+            2>/dev/null || true
+
+        # Ensure workspace and cache dirs are writable
+        for dir in "/home/$USERNAME/.cache" "/home/$USERNAME/workspace"; do
+            if [ -d "$dir" ]; then
+                chown "$USERNAME:$USERNAME" "$dir"
+            fi
+        done
+
+        # Remove any stale sentinels for old UID/GID pairs, then write the new one
+        rm -f "$SENTINEL_DIR"/.jvim-chown-* 2>/dev/null || true
+        mkdir -p "$SENTINEL_DIR"
+        touch "$SENTINEL"
+        chown "$USERNAME:$USERNAME" "$SENTINEL"
+    fi
 
     exec gosu "$USERNAME" "$@"
 fi
